@@ -1,0 +1,8 @@
+{
+  "name": "My Saved Dev Image",
+  "image": "lyteabovenyte/3d-nn:dev",
+  "workspaceFolder": "/workspace",
+  "mounts": [
+    "source=${localWorkspaceFolder},target=/workspace,type=bind"
+  ]
+}
