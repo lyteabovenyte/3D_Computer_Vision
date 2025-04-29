@@ -13,6 +13,9 @@
 - [KeypointDeformer: Unsupervised 3D Keypoint Discovery for Shape Control](https://arxiv.org/pdf/2104.11224)
 - [Model-based Reinforcement Learning for Parameterized Action Spaces](https://arxiv.org/pdf/2404.03037v3)
 - [Keypoints into the Future: Self-Supervised Correspondence in Model-Based Reinforcement Learning](https://arxiv.org/pdf/2009.05085)
+- [NeRF: Neural Radiance Field in 3D Vision, Introduction and Review](https://arxiv.org/pdf/2210.00379)
+- [Learning Particle Dynamics for Manipulating Rigid Bodies, Deformable Objects, and Fluids](http://dpi.csail.mit.edu/dpi-paper.pdf)
+- 
 
 
 ###### I'll try to train simplified version of each architecture and provide the weights along side a docker image which will be placed here after compeletion.
