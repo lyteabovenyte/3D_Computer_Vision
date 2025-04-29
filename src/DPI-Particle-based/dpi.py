@@ -6,6 +6,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.data import Dataset, DataLoader
+import torch_scatter
 
 
 class MLP(nn.Module):
@@ -38,7 +39,7 @@ class InteractionNetwork(nn.Module):
         updated_objects = self.effect_aggregator(effect_inputs)
         return updated_objects
 
-
+# based on https://arxiv.org/pdf/1809.11169
 class PropagationNetwork(nn.Module):
     def __init__(self, object_dim, relation_dim, effect_dim, hidden_dim, L=3):
         super().__init__()
@@ -114,17 +115,80 @@ def train_model(model, dataloader, optimizer, epochs=5):
         print(f"Epoch {epoch+1}, Loss: {total_loss / len(dataloader):.4f}")
 
 
-if __name__ == '__main__':
-    N = 5
-    D = 6
-    R = 4
-    dataset = ParticleDataset(num_samples=200, num_particles=N, obj_dim=D, rel_dim=R)
-    dataloader = DataLoader(dataset, batch_size=1, shuffle=True)
+class HierarchicalDynamicsModel(nn.Module):
+    def __init__(self, dim):
+        super().__init__()
+        self.dim = dim
 
-    in_model = InteractionNetwork(object_dim=D, relation_dim=R, effect_dim=16, hidden_dim=64)
-    optimizer = torch.optim.Adam(in_model.parameters(), lr=1e-3)
-    train_model(in_model, dataloader, optimizer)
+        # Local interaction model (particle to particle)
+        self.local_interaction = nn.Sequential(
+            nn.Linear(2 * dim, dim),
+            nn.ReLU(),
+            nn.Linear(dim, dim)
+        )
 
-    propnet = PropagationNetwork(object_dim=D, relation_dim=R, effect_dim=16, hidden_dim=64, L=3)
-    optimizer = torch.optim.Adam(propnet.parameters(), lr=1e-3)
-    train_model(propnet, dataloader, optimizer)
+        # Particle to cluster aggregation
+        self.p_to_c_agg = nn.Sequential(
+            nn.Linear(dim, dim),
+            nn.ReLU()
+        )
+
+        # Cluster to cluster interaction
+        self.cluster_interaction = nn.Sequential(
+            nn.Linear(2 * dim, dim),
+            nn.ReLU(),
+            nn.Linear(dim, dim)
+        )
+
+        # Cluster to particle broadcast
+        self.c_to_p_broadcast = nn.Sequential(
+            nn.Linear(dim, dim),
+            nn.ReLU()
+        )
+
+        # Final update model
+        self.final_update = nn.Sequential(
+            nn.Linear(2 * dim, dim),
+            nn.ReLU()
+        )
+
+    def forward(self, particle_states, cluster_states, particle_to_cluster, particle_edges, cluster_edges):
+        """
+        particle_states: (N, D)
+        cluster_states: (C, D)
+        particle_to_cluster: (N,) -> cluster ID for each particle
+        particle_edges: (E_p, 2) -> [sender, receiver] pairs for particle-level graph
+        cluster_edges: (E_c, 2) -> [sender, receiver] pairs for cluster-level graph
+        """
+
+        # ---- Particle-to-particle interaction ----
+        sender_states = particle_states[particle_edges[:, 0]]
+        receiver_states = particle_states[particle_edges[:, 1]]
+        edge_input = torch.cat([sender_states, receiver_states], dim=-1)
+        delta_particles_local = self.local_interaction(edge_input)
+
+        # Aggregate messages to each particle
+        particle_msg = torch.zeros_like(particle_states)
+        particle_msg = particle_msg.index_add(0, particle_edges[:, 1], delta_particles_local)
+
+        # ---- Particle-to-cluster aggregation (bottom-up) ----
+        cluster_inputs = self.p_to_c_agg(particle_states)
+        cluster_states_agg = torch_scatter.scatter_mean(cluster_inputs, particle_to_cluster, dim=0)
+
+        # ---- Cluster-to-cluster interaction ----
+        sender_c = cluster_states_agg[cluster_edges[:, 0]]
+        receiver_c = cluster_states_agg[cluster_edges[:, 1]]
+        c_edge_input = torch.cat([sender_c, receiver_c], dim=-1)
+        delta_clusters = self.cluster_interaction(c_edge_input)
+        cluster_msg = torch.zeros_like(cluster_states_agg)
+        cluster_msg = cluster_msg.index_add(0, cluster_edges[:, 1], delta_clusters)
+
+        # ---- Cluster-to-particle broadcast (top-down) ----
+        cluster_msg_broadcast = cluster_msg[particle_to_cluster]
+        cluster_msg_transformed = self.c_to_p_broadcast(cluster_msg_broadcast)
+
+        # ---- Combine local and global messages ----
+        combined_msg = torch.cat([particle_msg, cluster_msg_transformed], dim=-1)
+        updated_particle_states = self.final_update(combined_msg)
+
+        return updated_particle_states
