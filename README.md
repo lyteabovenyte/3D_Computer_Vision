@@ -15,6 +15,7 @@
 - [Keypoints into the Future: Self-Supervised Correspondence in Model-Based Reinforcement Learning](https://arxiv.org/pdf/2009.05085)
 - [NeRF: Neural Radiance Field in 3D Vision, Introduction and Review](https://arxiv.org/pdf/2210.00379)
 - [Learning Particle Dynamics for Manipulating Rigid Bodies, Deformable Objects, and Fluids](http://dpi.csail.mit.edu/dpi-paper.pdf)
+- [Propagation Networks for Model-Based Control Under Partial Observation](https://arxiv.org/pdf/1809.11169)
 - 
 
 
