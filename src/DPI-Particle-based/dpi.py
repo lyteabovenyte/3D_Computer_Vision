@@ -22,7 +22,12 @@ class MLP(nn.Module):
         return self.mlp(x)
 
 
+
 class InteractionNetwork(nn.Module):
+    """
+    IN is a learnable physics engine that contain object and relation centric reasoning about physics.
+    local interactions are modeled as a function of the object states and relations.
+    """
     def __init__(self, object_dim, relation_dim, effect_dim, hidden_dim):
         super().__init__()
         self.relation_encoder = MLP(2 * object_dim + relation_dim, hidden_dim, effect_dim)
@@ -39,8 +44,15 @@ class InteractionNetwork(nn.Module):
         updated_objects = self.effect_aggregator(effect_inputs)
         return updated_objects
 
+
 # based on https://arxiv.org/pdf/1809.11169
 class PropagationNetwork(nn.Module):
+    """
+    global interactions are modeled as a function of the object states and relations.
+    Propagation Networks (PropNet) are a generalization of INs that can model
+    multi-scale interactions and are more suitable for complex systems.
+    PropNet is a learnable physics engine that contains object and relation-centric reasoning about physics.
+    """
     def __init__(self, object_dim, relation_dim, effect_dim, hidden_dim, L=3):
         super().__init__()
         self.L = L
@@ -114,7 +126,8 @@ def train_model(model, dataloader, optimizer, epochs=5):
             total_loss += loss.item()
         print(f"Epoch {epoch+1}, Loss: {total_loss / len(dataloader):.4f}")
 
-
+# hierarchical graph for multi-scale effect propagation
+# based on http://dpi.csail.mit.edu/dpi-paper.pdf
 class HierarchicalDynamicsModel(nn.Module):
     def __init__(self, dim):
         super().__init__()
