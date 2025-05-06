@@ -36,26 +36,62 @@ class NeRFDecoder(nn.Module):
         input = torch.cat([x, d, z], dim=-1) # adding latent code to input
         return self.mlp(input)  # (B, 4)
 
-# InfoNCE-style Time-Contrastive Loss
-def time_contrastive_loss(z_all, temperature=0.07):
+# supporting multi-view inputs and applying hard negative pairs on contrastive-loss.
+def time_contrastive_loss(z_all, temperature=0.07, hard_negative_window=2):
     """
-    z_all: (T, D) latent embeddings at different time steps
+    Args:
+        z_all: (T, V, D) tensor of embeddings
+        temperature: scalar for scaling logits
+        hard_negative_window: how many steps away from t to treat as hard negatives
+    Returns:
+        contrastive loss scalar
     """
-    T, D = z_all.shape
-    z_all = F.normalize(z_all, dim=-1)  # normalize for cosine similarity
+    T, V, D = z_all.shape
+    device = z_all.device
+    z_all = F.normalize(z_all, dim=-1)  # Normalize for cosine similarity
 
-    sim_matrix = torch.matmul(z_all, z_all.T) / temperature  # (T, T)
-    labels = torch.arange(T - 1)
+    # Flatten time and view for anchor-positive setup
+    z_flat = z_all.view(T * V, D)  # (T*V, D)
 
-    # Only compare z[t] and z[t+1] (positive pairs)
-    logits = sim_matrix[:-1]  # shape: (T-1, T)
-    pos = torch.diag(sim_matrix, diagonal=1)  # positive similarities
+    # Create positive pairs: same time, different view
+    anchors = []
+    positives = []
+    for t in range(T):
+        for v in range(V):
+            for v_pos in range(V):
+                if v != v_pos:
+                    anchors.append(z_all[t, v])
+                    positives.append(z_all[t, v_pos])
+    anchors = torch.stack(anchors)  # (N_pos, D)
+    positives = torch.stack(positives)  # (N_pos, D)
 
-    # Mask out the diagonal (self-similarity)
-    mask = ~torch.eye(T, dtype=torch.bool)
-    logits = logits.masked_select(mask[:-1]).view(T - 1, T - 1)
+    # Compute similarity scores between anchors and all possible targets
+    logits = torch.matmul(anchors, z_flat.T) / temperature  # (N_pos, T*V)
 
-    # Apply cross entropy
+    # Create positive labels: index of correct positive in the flattened z_all
+    positive_indices = []
+    for t in range(T):
+        for v in range(V):
+            for v_pos in range(V):
+                if v != v_pos:
+                    idx = t * V + v_pos
+                    positive_indices.append(idx)
+    labels = torch.tensor(positive_indices, device=device, dtype=torch.long)  # (N_pos,)
+
+    # Optionally mask hard negatives: those at nearby time steps
+    if hard_negative_window > 0:
+        N_pos = anchors.shape[0]
+        mask = torch.ones_like(logits, dtype=torch.bool)
+        for i, idx in enumerate(positive_indices):
+            t_pos = idx // V
+            for dt in range(-hard_negative_window, hard_negative_window + 1):
+                t_neighbor = t_pos + dt
+                if 0 <= t_neighbor < T:
+                    for v in range(V):
+                        hard_idx = t_neighbor * V + v
+                        mask[i, hard_idx] = False
+        logits = logits.masked_fill(~mask, float('-inf'))
+
     return F.cross_entropy(logits, labels)
 
 
