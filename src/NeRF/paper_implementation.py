@@ -1,3 +1,14 @@
+"""
+    Based on the original paper:
+    Novel View Synthesis using a trained NeRF model is as follows:
+    1. for each pixel in the target view, cast a ray into the scene and sample points along the ray.
+    2. for each sample point, use the viewing direction and the 3D coordinates to query the NeRF model to compute
+    color and density.
+    3. use volume rendering to compute the final color of the pixel by integrating the colors and densities
+    of the samples along the ray.
+    4. repeat for all pixels in the target view.
+"""
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
