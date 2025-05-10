@@ -40,7 +40,7 @@ class NeRFDecoder(nn.Module):
 def time_contrastive_loss(z_all, temperature=0.07, hard_negative_window=2):
     """
     Args:
-        z_all: (T, V, D) tensor of embeddings
+        z_all: (T, V, D) tensor of embeddings -> (Time, View, Dimension)
         temperature: scalar for scaling logits
         hard_negative_window: how many steps away from t to treat as hard negatives
     Returns:
