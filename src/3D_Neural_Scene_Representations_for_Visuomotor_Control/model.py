@@ -15,7 +15,7 @@ class ConvEncoder(nn.Module):
             nn.Conv2d(input_channels, 32, kernel_size=4, stride=2, padding=1),
             nn.ReLU(),
             nn.Conv2d(32, 64, kernel_size=4, stride=2, padding=1),
-            nn.ReLU(),
+            nn.ReLU(),  
             nn.Conv2d(64, 128, kernel_size=4, stride=2, padding=1),
             nn.ReLU(),
             nn.Conv2d(128, 256, kernel_size=4, stride=2, padding=1),
@@ -25,7 +25,7 @@ class ConvEncoder(nn.Module):
 
     def forward(self, x):
         x = self.conv_layers(x)
-        x = x.view(x.size(0), -1)
+        x = x.view(x.size(0), -1) # flattening x
         return self.fc(x)
 
 # Simplified NeRF Module (Mixture Density Network)
@@ -34,7 +34,7 @@ class NeRFModule(nn.Module):
     def __init__(self, latent_dim=128, hidden_dim=256):
         super(NeRFModule, self).__init__()
         self.pos_enc_dim = 60  # Positional encoding for 3D points (L=10)
-        self.input_dim = latent_dim + self.pos_enc_dim + 3  # Latent code + pos + view dir
+        self.input_dim = latent_dim + self.pos_enc_dim + 3  # Latent code + pos + view dir -> input to NeRF decoder
         self.sigma_net = nn.Sequential(
             nn.Linear(self.input_dim, hidden_dim),
             nn.ReLU(),
