@@ -1,3 +1,9 @@
+"""
+    PointNet design philosophy:
+    1. Point-wise Embedding with Shared MLP -> local feature vector
+    2. Aggregation via Symmetric Function (MAX pooling) to extract global feature vector
+"""
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -32,7 +38,7 @@ class TNet(nn.Module):
         x = self.fc3(x)
 
         identity = torch.eye(self.k, device=x.device).view(1, self.k * self.k).repeat(B, 1)
-        x = x + identity
+        x = x + identity # based on original PointNet paper
         x = x.view(-1, self.k, self.k)
         return x
 
