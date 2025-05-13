@@ -19,7 +19,7 @@ class PointNetSetAbstraction(nn.Module):
             last_channel = out_channel
 
     def forward(self, xyz, points):
-        #! Sample and group operations would go here, often implemented with a custom CUDA kernel (based on FPS+KNN)
+        #! Sample and group operations would go here, often implemented with a custom CUDA kernel (based on FPS+ball-Query)
         # Assume new_xyz and grouped_points are obtained after sampling and grouping
         new_xyz = None  # Placeholder
         grouped_points = None  # Placeholder
