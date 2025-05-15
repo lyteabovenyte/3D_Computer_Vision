@@ -36,6 +36,7 @@ class PointNetSetAbstraction(nn.Module):
 class PointNet2SSG(nn.Module):
     def __init__(self, num_classes):
         super(PointNet2SSG, self).__init__()
+        # 3 layer set abstraction
         self.sa1 = PointNetSetAbstraction(npoint=512, radius=0.2, nsample=32, in_channel=3, mlp=[64, 64, 128])
         self.sa2 = PointNetSetAbstraction(npoint=128, radius=0.4, nsample=64, in_channel=128, mlp=[128, 128, 256])
         self.sa3 = PointNetSetAbstraction(npoint=None, radius=None, nsample=None, in_channel=256, mlp=[256, 512, 1024])
@@ -45,7 +46,7 @@ class PointNet2SSG(nn.Module):
         self.fc2 = nn.Linear(512, 256)
         self.bn2 = nn.BatchNorm1d(256)
         self.drop2 = nn.Dropout(0.4)
-        self.fc3 = nn.Linear(256, num_classes)
+        self.fc3 = nn.Linear(256, num_classes) # local features
 
     def forward(self, xyz):
         B, _, _ = xyz.shape
@@ -58,3 +59,5 @@ class PointNet2SSG(nn.Module):
         x = self.drop2(F.relu(self.bn2(self.fc2(x))))
         x = self.fc3(x)
         return x
+    
+# continued with feature propagation (upsampling, interpolation, skip-connection(this one is introduced in paper))
