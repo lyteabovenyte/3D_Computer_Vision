@@ -20,6 +20,7 @@ class PUFeatureExpansion(nn.Module):
         self.up_ratio = up_ratio
 
         # Multi-branch shared MLP layers
+        # feature-expansion using 1x1 convolutions
         self.branches = nn.ModuleList([
             nn.Sequential(
                 nn.Conv1d(in_channels, out_channels, 1),
