@@ -16,6 +16,9 @@
 - [NeRF: Neural Radiance Field in 3D Vision, Introduction and Review](https://arxiv.org/pdf/2210.00379)
 - [Learning Particle Dynamics for Manipulating Rigid Bodies, Deformable Objects, and Fluids](http://dpi.csail.mit.edu/dpi-paper.pdf)
 - [Propagation Networks for Model-Based Control Under Partial Observation](https://arxiv.org/pdf/1809.11169)
+- [PU-GAN: a Point Cloud Upsampling Adversarial Network](https://arxiv.org/pdf/1907.10844)
+- [PU-Net: Point Cloud Upsampling Network](https://arxiv.org/pdf/1801.06761)
+- [SPU-Net: Self-Supervised Point Cloud Upsampling by Coarse-to-Fine Reconstruction with Self-Projection Optimization](https://arxiv.org/abs/2012.04439)
 - 
 
 
