@@ -80,8 +80,15 @@ class Discriminator(nn.Module):
 # ---------------------------------------
 # training loop based on Adversarial loss
 # ---------------------------------------
+def chamfer_distance(pc1, pc2):
+    # Implement Chamfer Distance calculation
+    #! This is a placeholder function. You need to implement the actual Chamfer Distance calculation.
+    return torch.mean(torch.norm(pc1 - pc2, dim=2))
+
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 num_epochs = 100
+lambda_rec = 0.1 # Weight for reconstruction loss (Uniformity loss)
+
 # Initialize networks
 generator = Generator(up_ratio=4).to(device)
 discriminator = Discriminator().to(device)
